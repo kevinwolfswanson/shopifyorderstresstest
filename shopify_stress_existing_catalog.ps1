@@ -4,6 +4,7 @@ param(
   [string]$AccessToken,
   [string]$ApiVersion = "2025-01",
   [string]$CustomerEmail = "kevin.wolf@swansonhealth.com",
+  [string]$PromoCode,
   [int]$MaxSkusPerOrder = 100,
   [int]$Iterations = 10,
   [int]$TimeoutSec = 120,
@@ -151,13 +152,24 @@ for ($itemCount = 1; $itemCount -le $usableCount; $itemCount++) {
     $status = "ok"
     $errorText = $null
 
+    $draftOrder = @{
+      note = "stress-test existing-catalog run=$runId items=$itemCount iter=$iter"
+      tags = "stress-test,existing-catalog,run-$runId"
+      line_items = $lineItems
+      customer = @{ email = $CustomerEmail }
+    }
+
+    if ($PromoCode) {
+      $draftOrder.note_attributes = @(
+        @{
+          name = "promo_code"
+          value = $PromoCode
+        }
+      )
+    }
+
     $payload = @{
-      draft_order = @{
-        note = "stress-test existing-catalog run=$runId items=$itemCount iter=$iter"
-        tags = "stress-test,existing-catalog,run-$runId"
-        line_items = $lineItems
-        customer = @{ email = $CustomerEmail }
-      }
+      draft_order = $draftOrder
     }
 
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -181,6 +193,7 @@ for ($itemCount = 1; $itemCount -le $usableCount; $itemCount++) {
       timestamp_utc = (Get-Date).ToUniversalTime().ToString("o")
       store_domain = $StoreDomain
       customer_email = $CustomerEmail
+      promo_code = $PromoCode
       sku_count = $itemCount
       iteration = $iter
       status = $status
