@@ -44,6 +44,11 @@ Validate draft-order creation behavior under increasing line-item load, using sy
   - Executes incremental stress test for draft orders.
   - Supports iterations, timeout config, optional cleanup.
 
+- `shopify_stress_existing_catalog.ps1`
+  - Production-safe mode: uses existing store variants only.
+  - No product/SKU creation.
+  - Assigns draft orders to a known customer email.
+
 - `shopify_run_full_stress.ps1`
   - End-to-end wrapper:
     1. seed SKUs
@@ -89,6 +94,39 @@ To find failure boundary faster:
 - Increase max line items beyond `100` (for example `150`, `200`, `300`).
 - Optionally reduce timeout setting (for example `10`-`30` seconds) to surface practical limits.
 - Continue using timestamped output folders for comparison across runs.
+
+## Production Existing-Catalog Test Mode
+Use this mode when testing on a production store that already has SKUs.
+
+Example canary:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\shopify_stress_existing_catalog.ps1 `
+  -StoreDomain "<production-store>.myshopify.com" `
+  -KeyFilePath "C:\Users\kevin.wolf\OneDrive - Swanson Health Products\CSCshopifyadmin.txt" `
+  -CustomerEmail "kevin.wolf@swansonhealth.com" `
+  -MaxSkusPerOrder 10 `
+  -Iterations 3 `
+  -TimeoutSec 120 `
+  -CleanupDrafts `
+  -OutputCsv .\output\prod_canary.csv `
+  -OutputJson .\output\prod_canary.json `
+  -VariantsSnapshotCsv .\output\prod_variants_snapshot.csv
+```
+
+Example full run:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\shopify_stress_existing_catalog.ps1 `
+  -StoreDomain "<production-store>.myshopify.com" `
+  -KeyFilePath "C:\Users\kevin.wolf\OneDrive - Swanson Health Products\CSCshopifyadmin.txt" `
+  -CustomerEmail "kevin.wolf@swansonhealth.com" `
+  -MaxSkusPerOrder 100 `
+  -Iterations 10 `
+  -TimeoutSec 120 `
+  -CleanupDrafts `
+  -OutputCsv .\output\prod_full.csv `
+  -OutputJson .\output\prod_full.json `
+  -VariantsSnapshotCsv .\output\prod_variants_snapshot.csv
+```
 
 ## Security Note
 Do not commit access tokens or key files. Keep credentials in local files outside this repository.
