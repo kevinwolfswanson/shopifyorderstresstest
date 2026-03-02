@@ -55,6 +55,9 @@ This guide captures the fastest, most reliable workflow for testing draft-order 
 - If expecting timeout reproduction:
   - compare this app profile to direct API scripts (payload size, query shape, update cadence),
   - include large selection sets only if reproducing app-like load profile.
+- If Add Products says `No matching products found` for known-valid SKU patterns:
+  - inspect proxied Shopify search requests in Network (`graphql.json`) before concluding backend failure,
+  - compare UI state against response `products.edges` to identify frontend render/state mismatch.
 
 ## Test Logging Standard
 - For every significant step, record:

@@ -89,6 +89,14 @@ Latency snapshot from recorded results:
 Conclusion from this run:
 - No timeout threshold observed at up to `100` line items with `120s` timeout.
 
+## Zendesk Flow Findings
+- Imported historical findings doc:
+  - `docs/shopify-premium-zendesk-flow-findings-2026-02-11.md`
+- Includes March 2, 2026 addendum with newly confirmed behavior:
+  - high-latency `draftOrderUpdate` event (~`12.7s`)
+  - Add Products UI/API mismatch where UI reports no results while GraphQL returns matching `products.edges`
+  - linked evidence comments from GitHub issue `#4`
+
 ## Latest GraphQL Mimic Run (Agnostack Profile)
 Run date: `2026-03-02`
 
