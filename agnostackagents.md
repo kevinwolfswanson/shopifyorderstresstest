@@ -31,6 +31,14 @@ This guide captures the fastest, most reliable workflow for testing draft-order 
   - `totalDiscountsSet.presentmentMoney.amount` is non-zero
   - `lineItems.edges[].node.quantity` reflects expected quantity updates
 
+## Discount Preservation Diagnostic (Important)
+- A captured failure mode shows discounts can be dropped when adding one SKU.
+- Observed request pattern:
+  - pre-check `getDraftOrder` shows populated `platformDiscounts` and non-zero `totalDiscountsSet`
+  - app sends `draftOrderUpdate` with rewritten `lineItems` but without discount reapply fields
+  - post-check `getDraftOrder` shows `platformDiscounts: []` and `totalDiscountsSet: 0`
+- Practical rule: after each add/update action, always re-validate discount fields from GraphQL response before continuing.
+
 ## GraphQL Evidence Pattern (From Live Test)
 - Request type observed: `query getDraftOrder($id: ID!)`
 - Draft example: `gid://shopify/DraftOrder/1241112281226` (`#D31845`)

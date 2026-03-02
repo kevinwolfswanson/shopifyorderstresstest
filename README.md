@@ -95,6 +95,7 @@ Conclusion from this run:
 - Includes March 2, 2026 addendum with newly confirmed behavior:
   - high-latency `draftOrderUpdate` event (~`12.7s`)
   - Add Products UI/API mismatch where UI reports no results while GraphQL returns matching `products.edges`
+  - discount-loss diagnostic where a single-SKU add `draftOrderUpdate` dropped all discounts (`platformDiscounts -> []`, `totalDiscountsSet -> 0`)
   - linked evidence comments from GitHub issue `#4`
 
 ## Latest GraphQL Mimic Run (Agnostack Profile)

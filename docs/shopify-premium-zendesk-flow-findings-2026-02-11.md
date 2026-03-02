@@ -201,3 +201,48 @@ If needed, I can append a second section that maps each visible UI control (addr
   - https://github.com/kevinwolfswanson/shopifyorderstresstest/issues/4#issuecomment-3986809416
   - https://github.com/kevinwolfswanson/shopifyorderstresstest/issues/4#issuecomment-3986816645
   - https://github.com/kevinwolfswanson/shopifyorderstresstest/issues/4#issuecomment-3986820346
+
+## Addendum: March 2, 2026 (Discount Dropped After Single SKU Add)
+
+### Scope
+- Zendesk app: Shopify Premium for Zendesk (Agnostack)
+- Store: `ehndwb-vu.myshopify.com`
+- Draft under test: `#D10448` (`gid://shopify/DraftOrder/1237304639626`)
+- Action: add 1 SKU (`SWU375`) in the app cart
+
+### Diagnostic Sequence (Network)
+1. `reqid=4843` - `searchProducts`
+- Query used in request body: `sku:'SWU375'`
+- Response returned matching product/variant (search backend healthy)
+
+2. `reqid=4844` - `getProduct`
+- Product detail fetch for selected result
+- Response returned expected product data
+
+3. `reqid=4848` - `getDraftOrder` (pre-update baseline)
+- Discount state before add:
+  - `platformDiscounts` populated
+  - `totalDiscountsSet.presentmentMoney.amount = 121.55`
+  - discounted total shown in response (`totalPriceSet` around `202.82`)
+
+4. `reqid=4849` - `draftOrderUpdate` (critical mutation)
+- Mutation input included:
+  - full `lineItems` array (with added `SWU375`)
+  - `presentmentCurrencyCode: "USD"`
+- Mutation input did **not** include discount fields to preserve/reapply discount state.
+- Response immediately after mutation:
+  - `platformDiscounts: []`
+  - `appliedDiscount: null`
+  - `totalDiscountsSet.presentmentMoney.amount = 0.0`
+  - `totalPriceSet.presentmentMoney.amount = 372.53`
+
+5. `reqid=4850` - `getDraftOrder` (post-update confirmation)
+- Confirms discounts remain removed (`platformDiscounts` empty, `totalDiscountsSet=0`)
+
+### Interpretation
+- The discount drop is reproducible and is tied to the app's `draftOrderUpdate` payload shape.
+- Product search/add succeeded; discounts were removed during order update, not during SKU lookup.
+- This is consistent with "replace draft line items without preserving/reapplying discount state" behavior.
+
+### Traceability
+- Logged live in GitHub issue #4 with request-level details.
