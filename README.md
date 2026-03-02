@@ -89,6 +89,35 @@ Latency snapshot from recorded results:
 Conclusion from this run:
 - No timeout threshold observed at up to `100` line items with `120s` timeout.
 
+## Latest GraphQL Mimic Run (Agnostack Profile)
+Run date: `2026-03-02`
+
+Purpose:
+- Mimic the heavy `draftOrderUpdate` GraphQL selection shape used by Agnostack/Zendesk.
+- Test at fixed `40` SKUs with `10` iterations per scenario.
+
+Configuration:
+- Query profile: `agnostack` (heavy nested selection set)
+- SKU count: `40` unique variants, quantity `1` each
+- Iterations: `10`
+- Customer email: `kevin.wolf@swansonhealth.com`
+- SHP variants constrained to vendor matching `Swanson`
+- SHP promo scenario uses GraphQL `discountCodes: [\"CEO40SW\"]`
+
+Results:
+- `CSC` (`xeuvzw-cz.myshopify.com`): `0/10` success, `10/10` errors
+- `SHP` (`ehndwb-vu.myshopify.com`): `10/10` success, `0` errors
+- `SHP_PROMO` (`ehndwb-vu.myshopify.com`): `10/10` success, `0` errors
+
+Observed latency (successful SHP scenarios):
+- SHP: approximately `3.4s` to `4.2s`
+- SHP_PROMO: approximately `3.1s` to `4.1s`
+
+Artifacts:
+- `output/graphql_update_stress_results_20260302131040.csv`
+- `output/graphql_update_stress_results_20260302131040.json`
+- `output/graphql_update_stress_summary_20260302131040.csv`
+
 ## Recommended Next Test Expansion
 To find failure boundary faster:
 - Increase max line items beyond `100` (for example `150`, `200`, `300`).
