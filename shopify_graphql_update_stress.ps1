@@ -83,38 +83,41 @@ function Get-OrderableVariants {
     [string]$Token,
     [string]$Version,
     [int]$NeededCount,
+    [string]$VendorRegex,
     [int]$Timeout = 120
   )
 
   $rows = New-Object System.Collections.Generic.List[object]
+  $seen = @{}
   $sinceId = 0
 
   while ($rows.Count -lt $NeededCount) {
-    $resp = Invoke-ShopifyRest -Domain $Domain -Token $Token -Version $Version -Method GET -Endpoint "/variants.json?limit=250&since_id=$sinceId&fields=id,sku,title,inventory_policy,inventory_quantity" -Payload $null -Timeout $Timeout
-    if (-not $resp.variants -or $resp.variants.Count -eq 0) { break }
+    $resp = Invoke-ShopifyRest -Domain $Domain -Token $Token -Version $Version -Method GET -Endpoint "/products.json?limit=250&since_id=$sinceId&fields=id,title,vendor,variants" -Payload $null -Timeout $Timeout
+    if (-not $resp.products -or $resp.products.Count -eq 0) { break }
 
-    foreach ($v in $resp.variants) {
-      if (-not $v.id) { continue }
-      if ([string]::IsNullOrWhiteSpace($v.sku)) { continue }
+    foreach ($p in $resp.products) {
+      if ($VendorRegex -and $p.vendor -notmatch $VendorRegex) { continue }
 
-      $isOrderable = $true
-      if ($v.inventory_policy -ne "continue" -and $null -ne $v.inventory_quantity -and [int]$v.inventory_quantity -le 0) {
-        $isOrderable = $false
-      }
+      foreach ($v in $p.variants) {
+        if (-not $v.id) { continue }
+        if ([string]::IsNullOrWhiteSpace($v.sku)) { continue }
+        if ($seen.ContainsKey([string]$v.id)) { continue }
 
-      if ($isOrderable) {
+        $seen[[string]$v.id] = $true
         $rows.Add([PSCustomObject]@{
           variant_id = [int64]$v.id
           variant_gid = "gid://shopify/ProductVariant/$($v.id)"
           sku = $v.sku
-          title = $v.title
+          title = $p.title
+          vendor = $p.vendor
         })
-      }
 
+        if ($rows.Count -ge $NeededCount) { break }
+      }
       if ($rows.Count -ge $NeededCount) { break }
     }
 
-    $sinceId = [int64]$resp.variants[-1].id
+    $sinceId = [int64]$resp.products[-1].id
   }
 
   return $rows
@@ -161,55 +164,11 @@ mutation updateDraftOrder($id: ID!, $input: DraftOrderInput!) {
       taxesIncluded
       totalPriceSet { presentmentMoney { amount currencyCode } }
       tags
-      email
-      phone
-      taxExempt
-      customer {
-        id
-        legacyResourceId
-        firstName
-        lastName
-        state
-        defaultEmailAddress { emailAddress marketingState }
-        defaultPhoneNumber { phoneNumber marketingState }
-      }
-      billingAddress {
-        address1
-        address2
-        city
-        country
-        phone
-        province
-        provinceCode
-        zip
-        id
-        name
-        company
-        firstName
-        lastName
-        countryCodeV2
-      }
-      shippingAddress {
-        address1
-        address2
-        city
-        country
-        phone
-        province
-        provinceCode
-        zip
-        id
-        name
-        company
-        firstName
-        lastName
-        countryCodeV2
-        validationResultSummary
-      }
       totalTaxSet { presentmentMoney { amount currencyCode } }
       status
       invoiceUrl
       visibleToCustomer
+      platformDiscounts { code title }
       totalDiscountsSet { presentmentMoney { amount currencyCode } }
       customAttributes { key value }
       lineItems(first: 100) {
@@ -275,9 +234,9 @@ mutation updateDraftOrder($id: ID!, $input: DraftOrderInput!) {
 '@
 
 $scenarios = @(
-  [PSCustomObject]@{ label = "CSC"; domain = $CscDomain; token = (Get-Token -Path $CscTokenFile); promo = $null },
-  [PSCustomObject]@{ label = "SHP"; domain = $ShpDomain; token = (Get-Token -Path $ShpTokenFile); promo = $null },
-  [PSCustomObject]@{ label = "SHP_PROMO"; domain = $ShpDomain; token = (Get-Token -Path $ShpTokenFile); promo = $PromoCode }
+  [PSCustomObject]@{ label = "CSC"; domain = $CscDomain; token = (Get-Token -Path $CscTokenFile); promo = $null; vendorRegex = $null },
+  [PSCustomObject]@{ label = "SHP"; domain = $ShpDomain; token = (Get-Token -Path $ShpTokenFile); promo = $null; vendorRegex = "(?i)swanson" },
+  [PSCustomObject]@{ label = "SHP_PROMO"; domain = $ShpDomain; token = (Get-Token -Path $ShpTokenFile); promo = $PromoCode; vendorRegex = "(?i)swanson" }
 )
 
 $allResults = New-Object System.Collections.Generic.List[object]
@@ -286,7 +245,7 @@ $runId = Get-Date -Format "yyyyMMddHHmmss"
 foreach ($scenario in $scenarios) {
   Write-Host "=== Scenario: $($scenario.label) / $($scenario.domain) ==="
 
-  $variantRows = Get-OrderableVariants -Domain $scenario.domain -Token $scenario.token -Version $ApiVersion -NeededCount $MaxSkus -Timeout $TimeoutSec
+  $variantRows = Get-OrderableVariants -Domain $scenario.domain -Token $scenario.token -Version $ApiVersion -NeededCount $MaxSkus -VendorRegex $scenario.vendorRegex -Timeout $TimeoutSec
   if (-not $variantRows -or $variantRows.Count -lt $MaxSkus) {
     throw "Scenario $($scenario.label): insufficient orderable variants. Found=$($variantRows.Count) needed=$MaxSkus"
   }
@@ -316,7 +275,8 @@ foreach ($scenario in $scenarios) {
 
         $input = @{ lineItems = $lineItems; presentmentCurrencyCode = "USD" }
         if ($scenario.promo) {
-          $input.customAttributes = @(@{ key = "promo_code"; value = $scenario.promo })
+          $input.discountCodes = @($scenario.promo)
+          $input.allowDiscountCodesInCheckout = $true
         }
 
         $resp = Invoke-ShopifyGraphql -Domain $scenario.domain -Token $scenario.token -Version $ApiVersion -Query $updateMutation -Variables @{ id = $draftGid; input = $input } -Timeout $TimeoutSec
