@@ -98,6 +98,15 @@ Conclusion from this run:
   - discount-loss diagnostic where a single-SKU add `draftOrderUpdate` dropped all discounts (`platformDiscounts -> []`, `totalDiscountsSet -> 0`)
   - linked evidence comments from GitHub issue `#4`
 
+## Latest Status (March 3, 2026)
+- Consolidated lag/retry + CSC metafield hypothesis results:
+  - `docs/2026-03-03-lag-retry-metafield-results.md`
+- Highlights:
+  - CSC runs are complete and stable at 1..50 (with and without promo).
+  - CSC metafield-injection retest showed no regression in this profile.
+  - SHP no-promo sequential run is complete.
+  - SHP promo sequential dataset is currently partial and should be rerun cleanly.
+
 ## Latest GraphQL Mimic Run (Agnostack Profile)
 Run date: `2026-03-02`
 
