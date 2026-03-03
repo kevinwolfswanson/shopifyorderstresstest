@@ -48,6 +48,14 @@ This note consolidates latest stress-test outcomes and caveats.
 
 ## SHP Results (Latest Available)
 
+### SHP parallel artifacts (for context, not final)
+- Artifacts:
+  - `output/shp_nopromo_1_to_50_lag_retry.csv`
+  - `output/shp_promo_1_to_50_lag_retry.csv`
+- Note:
+  - These were executed concurrently against the same store and are useful mainly for contention-pattern context.
+  - Do not use as final stability baseline for SHP.
+
 ### SHP no promo sequential run (complete)
 - Artifact:
   - `output/shp_nopromo_1_to_50_lag_retry_seq.csv`
@@ -65,6 +73,13 @@ This note consolidates latest stress-test outcomes and caveats.
 - Interpretation:
   - use this file as partial/intermediate only
   - run should be rerun cleanly for a definitive SHP promo 1..50 result set
+
+## Practical Takeaway
+- CSC:
+  - Under lag+retry, promo persistence is stable and product-metafield injection did not materially change outcomes.
+- SHP:
+  - No-promo path is stable in clean sequential run.
+  - Promo path still needs one clean uninterrupted sequential pass to finalize high-confidence 1..50 metrics.
 
 ## Issue Traceability
 - CSC tracking issue:

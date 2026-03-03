@@ -107,6 +107,31 @@ Conclusion from this run:
   - SHP no-promo sequential run is complete.
   - SHP promo sequential dataset is currently partial and should be rerun cleanly.
 
+## Documentation Map
+- Primary runbook and current conclusions:
+  - `README.md`
+- Latest lag/retry and metafield test status (dated snapshot):
+  - `docs/2026-03-03-lag-retry-metafield-results.md`
+- Zendesk/Agnostack request-level findings:
+  - `docs/shopify-premium-zendesk-flow-findings-2026-02-11.md`
+- Zendesk app operator workflow:
+  - `agnostackagents.md`
+
+## Current Conclusions
+- CSC:
+  - Promo/no-promo runs are stable with lag+retry at 1..50.
+  - Collection-scoped promo applicability is confirmed for CSC test SKUs.
+  - Product-metafield injection (2,000 added) did not introduce discount drop behavior in this profile.
+- SHP:
+  - No-promo sequential run is stable at 1..50.
+  - Promo behavior remains the primary instability area and needs one clean uninterrupted 1..50 rerun for final numbers.
+
+## Data Quality Notes
+- Prefer sequential artifacts over parallel artifacts for SHP conclusions.
+- Parallel SHP runs can self-induce contention and overstate instability.
+- Treat the following as intermediate only:
+  - `output/shp_promo_1_to_50_lag_retry_seq.csv` (contains gaps/duplicates from resumed run)
+
 ## Latest GraphQL Mimic Run (Agnostack Profile)
 Run date: `2026-03-02`
 
